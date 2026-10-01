@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-4">
+
+  <div class="card-glass p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-gear me-2" style="color:var(--accent)"></i>Admin Panel</h4>
+        <p class="text-muted small mb-0">Platform management &amp; analytics</p>
+      </div>
+      <span class="badge" style="background:var(--accent);padding:.5rem 1rem">
+        <i class="bi bi-shield-check me-1"></i>Administrator
+      </span>
+    </div>
+  </div>
+
+  <!-- System Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-blue">
+        <div class="stat-icon text-info"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-value" data-count="{{ users|length }}">{{ users|length }}</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-purple">
+        <div class="stat-icon" style="color:var(--accent)"><i class="bi bi-file-earmark-fill"></i></div>
+        <div class="stat-value" data-count="{{ doc_count }}">{{ doc_count }}</div>
+        <div class="stat-label">Documents</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-green">
+        <div class="stat-icon" style="color:var(--teal)"><i class="bi bi-cpu-fill"></i></div>
+        <div class="stat-value" data-count="{{ analysis_count }}">{{ analysis_count }}</div>
+        <div class="stat-label">Analyses</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-red">
+        <div class="stat-icon" style="color:var(--danger)"><i class="bi bi-bug-fill"></i></div>
+        <div class="stat-value" data-count="{{ avg_plag }}" data-float="true" data-suffix="%">{{ avg_plag }}%</div>
+        <div class="stat-label">Avg Plagiarism</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4" style="border-bottom:1px solid var(--border)">
+    <li class="nav-item">
+      <button class="nav-link active" id="usersTab" data-bs-toggle="tab" data-bs-target="#usersPane" style="color:var(--text-muted)">
+        <i class="bi bi-people me-1"></i>Users ({{ users|length }})
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="recentTab" data-bs-toggle="tab" data-bs-target="#recentPane" style="color:var(--text-muted)">
+        <i class="bi bi-clock-history me-1"></i>Recent Analyses
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="logsTab" data-bs-toggle="tab" data-bs-target="#logsPane" style="color:var(--text-muted)">
+        <i class="bi bi-journal-text me-1"></i>Activity Log
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- Users Tab -->
+    <div class="tab-pane fade show active" id="usersPane">
+      <div class="card-glass p-4">
+        <div class="card-header-bar mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-people me-2" style="color:var(--accent)"></i>User Management</h6>
+          <input type="text" id="userSearch" class="search-input" placeholder="Search users…"/>
+        </div>
+        <div class="table-responsive">
+          <table class="table ai-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th class="text-center">Docs</th>
+                <th class="text-center">Status</th>
+                <th>Joined</th>
+                <th>Last Login</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+              <tr class="user-row">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="profile-avatar" style="width:34px;height:34px;font-size:.95rem;flex-shrink:0">
+                      {{ u.username[0].upper() }}
+                    </div>
+                    <div>
+                      <div class="fw-semibold small user-name">{{ u.username }}</div>
+                      <div style="font-size:.72rem;color:var(--text-muted)" class="user-email">{{ u.email }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="score-badge {{ 'badge-primary' if u.is_admin else 'badge-success' }}">
+                    {{ u.role.upper() }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <span class="fw-semibold">{{ doc_counts.get(u.id, 0) }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="score-badge {{ 'badge-success' if u.is_active else 'badge-danger' }}">
+                    {{ 'Active' if u.is_active else 'Disabled' }}
+                  </span>
+                </td>
+                <td class="text-muted small">{{ u.created_at.strftime('%d %b %Y') }}</td>
+                <td class="text-muted small">
+                  {{ u.last_login.strftime('%d %b %Y') if u.last_login else '—' }}
+                </td>
+                <td class="text-center">
+                  {% if not u.is_admin %}
+                  <div class="d-flex gap-1 justify-content-center">
+                    <form method="POST" action="{{ url_for('admin.toggle_user', uid=u.id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <button class="btn btn-xs {{ 'btn-outline-warning' if u.is_active else 'btn-outline-success' }}"
+                              title="{{ 'Disable' if u.is_active else 'Enable' }}">
+                        <i class="bi bi-{{ 'pause-fill' if u.is_active else 'play-fill' }}"></i>
+                      </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.delete_user', uid=u.id) }}" class="d-inline"
+                          onsubmit="return confirm('Delete {{ u.username }} and ALL their data? This cannot be undone.')">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <button class="btn btn-xs btn-outline-danger" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                  {% else %}
+                    <span class="text-muted small">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Analyses -->
+    <div class="tab-pane fade" id="recentPane">
+      <div class="card-glass p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-cpu me-2" style="color:var(--teal)"></i>Recent Analyses</h6>
+        <div class="table-responsive">
+          <table class="table ai-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>User</th>
+                <th class="text-center">Plagiarism</th>
+                <th class="text-center">Originality</th>
+                <th class="text-center">Grade</th>
+                <th>Date</th>
+                <th class="text-center">View</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for analysis, doc, user in recent %}
+              <tr>
+                <td class="small fw-semibold">{{ doc.original_name }}</td>
+                <td class="small text-muted">{{ user.username }}</td>
+                <td class="text-center">
+                  <span class="score-badge {{ 'badge-danger' if analysis.plagiarism_score > 50 else 'badge-warning' if analysis.plagiarism_score > 20 else 'badge-success' }}">
+                    {{ "%.1f"|format(analysis.plagiarism_score) }}%
+                  </span>
+                </td>
+                <td class="text-center">
+                  <span class="score-badge badge-primary">{{ "%.1f"|format(analysis.originality_score) }}%</span>
+                </td>
+                <td class="text-center fw-bold" style="color:var(--accent)">{{ analysis.grade }}</td>
+                <td class="small text-muted">{{ analysis.analyzed_at.strftime('%d %b %Y') }}</td>
+                <td class="text-center">
+                  <a href="{{ url_for('analysis.results', analysis_id=analysis.id) }}"
+                     class="btn btn-xs btn-outline-accent">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Logs -->
+    <div class="tab-pane fade" id="logsPane">
+      <div class="card-glass p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-journal-text me-2" style="color:var(--warning)"></i>Activity Log (Last 50)</h6>
+        <div class="table-responsive">
+          <table class="table ai-table align-middle mb-0">
+            <thead>
+              <tr><th>Time</th><th>User ID</th><th>Action</th><th>Detail</th><th>IP</th></tr>
+            </thead>
+            <tbody>
+              {% for log in logs %}
+              <tr>
+                <td class="small text-muted">{{ log.created_at.strftime('%d %b %H:%M') }}</td>
+                <td class="small">{{ log.user_id or '—' }}</td>
+                <td>
+                  <span class="score-badge {{ 'badge-danger' if 'delete' in log.action else 'badge-success' if 'login' in log.action else 'badge-primary' }}">
+                    {{ log.action }}
+                  </span>
+                </td>
+                <td class="small text-muted">{{ log.detail or '—' }}</td>
+                <td class="small text-muted">{{ log.ip_address or '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- tab-content -->
+</div>
+{% endblock %}

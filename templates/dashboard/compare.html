@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Compare Documents — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card-glass p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-git me-2" style="color:var(--accent)"></i>Side-by-Side Comparison</h4>
+        <div class="text-muted small">
+          Comparing: <strong>{{ doc.original_name }}</strong>
+        </div>
+      </div>
+      <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Select Reference -->
+  <div class="card-glass p-4 mb-4">
+    <h6 class="fw-bold mb-3"><i class="bi bi-file-diff me-2" style="color:var(--teal)"></i>Select Reference Document</h6>
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-8">
+          <label class="form-label fw-semibold small">Compare against:</label>
+          <select name="ref_doc_id" class="form-select" required>
+            <option value="">— Select a document from your library —</option>
+            {% for d in user_docs %}
+            <option value="{{ d.id }}" {{ 'selected' if ref_doc and ref_doc.id == d.id }}>
+              {{ d.original_name }} ({{ d.word_count }} words — {{ d.uploaded_at.strftime('%d %b %Y') }})
+            </option>
+            {% endfor %}
+          </select>
+          {% if not user_docs %}
+          <div class="form-text text-warning">No other documents found. Upload more documents first.</div>
+          {% endif %}
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-accent w-100" type="submit">
+            <i class="bi bi-play-fill me-1"></i>Compare Now
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if comparison %}
+  <!-- Scores -->
+  <div class="row g-3 mb-4">
+    {% for alg, val in comparison.scores.items() %}
+    <div class="col-6 col-md-{{ 2 if alg != 'combined' else 2 }}">
+      <div class="stat-card {{ 'stat-red' if val > 50 else 'stat-orange' if val > 25 else 'stat-green' }}">
+        <div class="stat-label">{{ alg.upper() }}</div>
+        <div class="stat-value" style="color:{{ 'var(--danger)' if val > 50 else 'var(--warning)' if val > 25 else 'var(--teal)' }}">
+          {{ "%.1f"|format(val) }}%
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Side-by-Side Text -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card-glass p-3">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-file-earmark me-2" style="color:var(--accent)"></i>{{ doc.original_name }}</h6>
+        <div class="compare-pane" id="leftPane">
+          {{ comparison.highlighted|safe }}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card-glass p-3">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-file-earmark me-2" style="color:var(--teal)"></i>{{ ref_doc.original_name }}</h6>
+        <div class="compare-pane" id="rightPane" style="overflow-y:auto;">
+          <p>{{ ref_doc.content[:8000] }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Matched Sentences -->
+  {% if comparison.sent_matches %}
+  <div class="card-glass p-4">
+    <h6 class="fw-bold mb-3">
+      <i class="bi bi-list-check me-2" style="color:var(--warning)"></i>
+      Matched Sentence Pairs
+      <span class="badge badge-warning ms-1">{{ comparison.sent_matches|length }}</span>
+    </h6>
+    {% for m in comparison.sent_matches %}
+    <div class="row g-2 mb-3 p-2 rounded-2" style="background:rgba(0,0,0,.2);border:1px solid var(--border)">
+      <div class="col-12 col-md-5">
+        <div class="text-muted small mb-1">Document A:</div>
+        <div class="small" style="font-style:italic">"{{ m.sentence[:200] }}"</div>
+      </div>
+      <div class="col-12 col-md-2 d-flex align-items-center justify-content-center">
+        <span class="score-badge {{ 'badge-danger' if m.score>=70 else 'badge-warning' if m.score>=40 else 'badge-success' }}">
+          {{ "%.1f"|format(m.score) }}%
+        </span>
+      </div>
+      <div class="col-12 col-md-5">
+        <div class="text-muted small mb-1">Document B:</div>
+        <div class="small" style="font-style:italic">"{{ m.match[:200] if m.match else '—' }}"</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="card-glass p-5 text-center">
+    <i class="bi bi-files d-block mb-3" style="font-size:3rem;color:var(--accent);opacity:.4"></i>
+    <h5 class="text-muted">Select a document above to start comparison</h5>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

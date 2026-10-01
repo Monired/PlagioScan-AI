@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Profile — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4 justify-content-center">
+    <div class="col-lg-4">
+      <!-- Profile Card -->
+      <div class="card-glass p-4 text-center mb-4">
+        <div class="profile-avatar mb-3">{{ current_user.username[0].upper() }}</div>
+        <h5 class="fw-bold mb-0">{{ current_user.username }}</h5>
+        <div class="text-muted small">{{ current_user.email }}</div>
+        <div class="mt-2">
+          {% if current_user.is_admin %}
+            <span class="badge" style="background:var(--accent)">Admin</span>
+          {% endif %}
+          <span class="badge {{ 'badge-success' if current_user.is_active else 'badge-danger' }}">
+            {{ 'Active' if current_user.is_active else 'Disabled' }}
+          </span>
+        </div>
+        <hr style="border-color:var(--border)"/>
+        <div class="row g-2">
+          <div class="col-4">
+            <div class="profile-stat">
+              <div class="profile-stat-val">{{ doc_count }}</div>
+              <div class="profile-stat-lbl">Docs</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="profile-stat">
+              <div class="profile-stat-val" style="color:var(--teal)">{{ an_count }}</div>
+              <div class="profile-stat-lbl">Analyzed</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="profile-stat">
+              <div class="profile-stat-val" style="color:var(--warning)">{{ doc_count - an_count }}</div>
+              <div class="profile-stat-lbl">Pending</div>
+            </div>
+          </div>
+        </div>
+        <hr style="border-color:var(--border)"/>
+        <div class="text-muted small">Member since {{ current_user.created_at.strftime('%B %Y') }}</div>
+        {% if current_user.last_login %}
+        <div class="text-muted small">Last login: {{ current_user.last_login.strftime('%d %b %Y, %H:%M') }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Theme Toggle -->
+      <div class="card-glass p-3 text-center mb-4">
+        <div class="fw-semibold mb-2 small">Interface Theme</div>
+        <button class="btn btn-outline-accent w-100" onclick="toggleTheme()">
+          <i class="bi bi-moon-stars me-2"></i>Toggle Dark / Light
+        </button>
+      </div>
+
+      <!-- Recent Docs -->
+      {% if recent_docs %}
+      <div class="card-glass p-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2" style="color:var(--accent)"></i>Recent Documents</h6>
+        {% for d in recent_docs %}
+        <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--border)">
+          <div class="small fw-semibold" style="max-width:160px" class="text-truncate">{{ d.original_name }}</div>
+          <span class="text-muted" style="font-size:.72rem">{{ d.uploaded_at.strftime('%d %b') }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-lg-7">
+      <!-- Update Email -->
+      <div class="card-glass p-4 mb-4">
+        <h5 class="fw-bold mb-4"><i class="bi bi-envelope me-2" style="color:var(--accent)"></i>Update Email</h5>
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="action" value="update_email"/>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Current Email</label>
+            <input type="email" class="form-control" value="{{ current_user.email }}" readonly/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">New Email Address</label>
+            <input type="email" name="new_email" class="form-control" placeholder="new@email.com" required/>
+          </div>
+          <button type="submit" class="btn btn-accent px-4">
+            <i class="bi bi-save me-1"></i>Update Email
+          </button>
+        </form>
+      </div>
+
+      <!-- Change Password -->
+      <div class="card-glass p-4">
+        <h5 class="fw-bold mb-4"><i class="bi bi-lock me-2" style="color:var(--teal)"></i>Change Password</h5>
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="action" value="change_password"/>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Current Password</label>
+            <div class="input-group">
+              <input type="password" name="current_password" id="cur-pw" class="form-control" required/>
+              <span class="input-group-text" data-pw-toggle="cur-pw"><i class="bi bi-eye"></i></span>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">New Password</label>
+            <div class="input-group">
+              <input type="password" name="new_password" id="new-pw" class="form-control" required minlength="6"/>
+              <span class="input-group-text" data-pw-toggle="new-pw"><i class="bi bi-eye"></i></span>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold small">Confirm New Password</label>
+            <div class="input-group">
+              <input type="password" name="confirm_password" id="conf-pw" class="form-control" required minlength="6"/>
+              <span class="input-group-text" data-pw-toggle="conf-pw"><i class="bi bi-eye"></i></span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-teal px-4">
+            <i class="bi bi-key me-1"></i>Change Password
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Analyzing — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card-glass p-5 text-center">
+
+        <!-- Animated shield -->
+        <div class="progress-shield mx-auto mb-4">
+          <i class="bi bi-shield-check"></i>
+        </div>
+
+        <h4 class="fw-bold mb-1">Analysing Your Document</h4>
+        <p class="text-muted small mb-4">
+          <strong>{{ doc.original_name }}</strong> &nbsp;·&nbsp; {{ doc.word_count }} words
+        </p>
+
+        <!-- Progress bar -->
+        <div class="progress mb-2" style="height:8px;border-radius:8px">
+          <div class="progress-bar progress-bar-striped progress-bar-animated"
+               id="progressBar" style="width:5%;background:linear-gradient(90deg,var(--accent),var(--teal))">
+          </div>
+        </div>
+        <div class="d-flex justify-content-between mb-4">
+          <span class="small text-muted" id="stageLbl">Queued…</span>
+          <span class="small fw-semibold" id="pctLbl" style="color:var(--accent)">5%</span>
+        </div>
+
+        <!-- Stage steps -->
+        <div class="text-start mb-4">
+          {% for icon, label, pct in [
+            ('file-earmark-text','Extract Text', 15),
+            ('cpu','Similarity Algorithms', 30),
+            ('diagram-3','Semantic Analysis', 45),
+            ('globe2','Web + Academic Search', 60),
+            ('pen','Writing Quality', 72),
+            ('bookmark-check','Citation Analysis', 85),
+            ('file-richtext','Generate Report', 95),
+          ] %}
+          <div class="stage-step d-flex align-items-center gap-2 mb-2"
+               data-pct="{{ pct }}" id="step-{{ loop.index0 }}">
+            <div class="stage-dot"><i class="bi bi-{{ icon }}"></i></div>
+            <span class="small">{{ label }}</span>
+            <i class="bi bi-check-circle-fill ms-auto stage-check" style="display:none;color:var(--teal)"></i>
+          </div>
+          {% endfor %}
+        </div>
+
+        <p class="text-muted small mb-0">
+          <i class="bi bi-clock me-1"></i>
+          Typical analysis takes 15–60 seconds depending on document size and web search.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DOC_ID = {{ doc.id }};
+const POLL_URL = '/analysis/progress/' + DOC_ID + '/status';
+let redirecting = false;
+
+function pollProgress() {
+  if (redirecting) return;
+  fetch(POLL_URL)
+    .then(r => r.json())
+    .then(data => {
+      const pct   = data.progress || 0;
+      const stage = data.stage   || 'Processing…';
+      const bar   = document.getElementById('progressBar');
+      const lbl   = document.getElementById('stageLbl');
+      const plbl  = document.getElementById('pctLbl');
+
+      bar.style.width = pct + '%';
+      lbl.textContent = stage;
+      plbl.textContent = pct + '%';
+
+      // Tick completed steps
+      document.querySelectorAll('.stage-step').forEach(el => {
+        if (pct >= parseInt(el.dataset.pct)) {
+          el.querySelector('.stage-check').style.display = 'inline';
+          el.querySelector('.stage-dot').style.background = 'rgba(0,201,167,.2)';
+          el.querySelector('.stage-dot i').style.color = 'var(--teal)';
+        }
+      });
+
+      if (data.status === 'done' && data.redirect) {
+        redirecting = true;
+        bar.style.width = '100%';
+        lbl.textContent = 'Complete!';
+        plbl.textContent = '100%';
+        setTimeout(() => { window.location.href = data.redirect; }, 600);
+      } else if (data.status === 'error') {
+        lbl.textContent = 'Analysis failed: ' + (data.error || 'Unknown error');
+        lbl.style.color = 'var(--danger)';
+        bar.style.background = 'var(--danger)';
+      } else {
+        setTimeout(pollProgress, 1800);
+      }
+    })
+    .catch(() => setTimeout(pollProgress, 3000));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(pollProgress, 1000);
+});
+</script>
+{% endblock %}

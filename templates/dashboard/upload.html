@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Upload Document — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+
+      <div class="card-glass p-4">
+        <div class="card-header-bar">
+          <div>
+            <h4 class="mb-0"><i class="bi bi-cloud-upload me-2" style="color:var(--accent)"></i>Upload Document</h4>
+            <p class="text-muted small mb-0 mt-1">PDF, DOCX, TXT, RTF, ODT, Images (OCR), ZIP &nbsp;·&nbsp; Max 32MB &nbsp;·&nbsp; Min 30 words</p>
+          </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" id="uploadForm"
+              action="{{ url_for('analysis.upload') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+          <!-- Drop Zone -->
+          <div class="drop-zone mb-4" id="dropZone">
+            <input type="file" id="fileInput" name="file"
+                   accept=".txt,.pdf,.docx,.rtf,.odt,.png,.jpg,.jpeg,.zip" required hidden/>
+            <div id="dropInner">
+              <div class="drop-icon"><i class="bi bi-cloud-upload-fill"></i></div>
+              <h5 class="mt-2 fw-bold">Drag &amp; Drop File Here</h5>
+              <p class="text-muted mb-3">or click to browse your files</p>
+              <button type="button" class="btn btn-outline-accent px-4"
+                      onclick="document.getElementById('fileInput').click()">
+                <i class="bi bi-folder2-open me-2"></i>Browse Files
+              </button>
+              <div class="mt-3 d-flex justify-content-center gap-2 flex-wrap">
+                <span class="badge" style="background:var(--accent)">.PDF</span>
+                <span class="badge" style="background:#1565c0">.DOCX</span>
+                <span class="badge bg-secondary">.TXT</span>
+                <span class="badge bg-secondary">.RTF</span>
+                <span class="badge bg-secondary">.ODT</span>
+                <span class="badge bg-secondary">.PNG/.JPG</span>
+                <span class="badge bg-secondary">.ZIP</span>
+              </div>
+            </div>
+            <div id="fileSelected" class="d-none text-center">
+              <span id="selectedTypeIcon" style="font-size:3rem;">📄</span>
+              <div class="fw-bold mt-2" id="selectedName"></div>
+              <div class="text-muted small" id="selectedSize"></div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-2" id="clearFile">
+                <i class="bi bi-x me-1"></i>Remove
+              </button>
+            </div>
+          </div>
+
+          <!-- Reference Document (optional) -->
+          <div class="accordion mb-4" id="refAccordion">
+            <div class="accordion-item border rounded-3" style="background:var(--bg-card2);border-color:var(--border)!important">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 rounded-3"
+                        style="background:var(--bg-card2);color:var(--text);box-shadow:none"
+                        type="button" data-bs-toggle="collapse" data-bs-target="#refSection">
+                  <i class="bi bi-file-diff me-2" style="color:var(--accent)"></i>
+                  Reference Document for Local Comparison
+                  <span class="text-muted ms-2 small">(optional)</span>
+                </button>
+              </h2>
+              <div id="refSection" class="accordion-collapse collapse">
+                <div class="accordion-body" style="background:var(--bg-card2)">
+                  <p class="text-muted small mb-3">Upload a reference document to compare your document against it side-by-side using all similarity algorithms.</p>
+                  <input type="file" name="reference_file" class="form-control"
+                         accept=".txt,.pdf,.docx,.rtf,.odt"/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Draft Options -->
+          <div class="accordion mb-4">
+            <div class="accordion-item border rounded-3" style="background:var(--bg-card2);border-color:var(--border)!important">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-2 rounded-3"
+                        style="background:var(--bg-card2);color:var(--text);box-shadow:none"
+                        type="button" data-bs-toggle="collapse" data-bs-target="#draftSection">
+                  <i class="bi bi-git me-2" style="color:var(--teal)"></i>
+                  Draft Version Settings
+                  <span class="text-muted ms-2 small">(optional)</span>
+                </button>
+              </h2>
+              <div id="draftSection" class="accordion-collapse collapse">
+                <div class="accordion-body" style="background:var(--bg-card2)">
+                  <div class="row g-3">
+                    <div class="col-sm-8">
+                      <label class="form-label fw-semibold small">Draft Group Name</label>
+                      <input type="text" name="draft_group" class="form-control"
+                             placeholder="e.g. research-paper-2024" maxlength="80"/>
+                      <div class="form-text">Group multiple drafts under the same name to compare them.</div>
+                    </div>
+                    <div class="col-sm-4">
+                      <label class="form-label fw-semibold small">Version #</label>
+                      <input type="number" name="draft_version" class="form-control"
+                             value="1" min="1" max="50"/>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-accent w-100 py-3 fw-semibold fs-5"
+                  id="submitBtn" disabled>
+            <i class="bi bi-cpu me-2"></i>Analyze Document
+          </button>
+        </form>
+      </div>
+
+      <!-- Tips -->
+      <div class="card-glass p-4 mt-4">
+        <h6 class="fw-bold mb-3" style="color:var(--accent)">
+          <i class="bi bi-lightbulb me-1"></i>Tips for Best Results
+        </h6>
+        <ul class="list-unstyled mb-0">
+          {% for tip in [
+            'Use text-based PDFs, not scanned images (for best accuracy)',
+            'Documents with 500+ words get the most thorough analysis',
+            'Include citations — they improve Research Depth score',
+            'Enable web search for internet plagiarism detection',
+            'Use draft groups to track how your writing evolves',
+          ] %}
+          <li class="mb-2 small">
+            <i class="bi bi-check-circle-fill me-2" style="color:var(--teal)"></i>{{ tip }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

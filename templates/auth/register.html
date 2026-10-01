@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Register — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-center py-5" style="min-height:80vh;">
+  <div class="auth-card">
+    <div class="text-center mb-4">
+      <div class="auth-icon"><i class="bi bi-person-plus"></i></div>
+      <h3 class="fw-bold mt-3">Create Account</h3>
+      <p class="text-muted small">Start analyzing your documents today</p>
+    </div>
+    <form method="POST" action="{{ url_for('auth.register_page') }}" id="registerForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="mb-3">
+        <label for="reg-username" class="form-label fw-semibold">Username</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person" style="color:var(--accent)"></i></span>
+          <input type="text" id="reg-username" name="username" class="form-control"
+                 placeholder="3–32 characters (letters, numbers, _ -)"
+                 value="{{ form_data.get('username','') }}"
+                 required minlength="3" maxlength="32" autocomplete="username"/>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="reg-email" class="form-label fw-semibold">Email Address</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope" style="color:var(--accent)"></i></span>
+          <input type="email" id="reg-email" name="email" class="form-control"
+                 placeholder="your@email.com"
+                 value="{{ form_data.get('email','') }}"
+                 required autocomplete="email"/>
+        </div>
+      </div>
+      <div class="mb-2">
+        <label for="reg-password" class="form-label fw-semibold">Password</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock" style="color:var(--accent)"></i></span>
+          <input type="password" id="reg-password" name="password" class="form-control"
+                 placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password"/>
+          <span class="input-group-text" data-pw-toggle="reg-password">
+            <i class="bi bi-eye"></i>
+          </span>
+        </div>
+        <div class="progress mt-2" style="height:3px;">
+          <div class="progress-bar" id="pwStrengthBar" style="width:0;transition:width .3s;"></div>
+        </div>
+        <div class="form-text" id="pwStrengthLbl"></div>
+      </div>
+      <div class="mb-4">
+        <label for="reg-confirm" class="form-label fw-semibold">Confirm Password</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock-fill" style="color:var(--accent)"></i></span>
+          <input type="password" id="reg-confirm" name="confirm_password" class="form-control"
+                 placeholder="Repeat password" required autocomplete="new-password"/>
+          <span class="input-group-text" data-pw-toggle="reg-confirm">
+            <i class="bi bi-eye"></i>
+          </span>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-accent w-100 py-2 fw-semibold" id="regBtn" disabled>
+        <i class="bi bi-rocket-takeoff me-2"></i>Create Account
+      </button>
+    </form>
+    <hr class="my-4"/>
+    <p class="text-center text-muted small">
+      Already have an account? <a href="{{ url_for('auth.login_page') }}" class="fw-semibold" style="color:var(--accent)">Login here</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('registerForm').addEventListener('submit', function() {
+  const btn = document.getElementById('regBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating account…';
+});
+</script>
+{% endblock %}

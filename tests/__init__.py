@@ -1,0 +1,1 @@
+"""PlagioScan AI — Tests init"""

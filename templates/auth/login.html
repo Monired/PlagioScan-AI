@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Login — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-center py-5" style="min-height:80vh;">
+  <div class="auth-card">
+    <div class="text-center mb-4">
+      <div class="auth-icon"><i class="bi bi-shield-check"></i></div>
+      <h3 class="fw-bold mt-3">Welcome Back</h3>
+      <p class="text-muted small">Login to your PlagioScan AI account</p>
+    </div>
+    <form method="POST" action="{{ url_for('auth.login_page') }}" id="loginForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="mb-3">
+        <label for="login-user" class="form-label fw-semibold">Username or Email</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person" style="color:var(--accent)"></i></span>
+          <input type="text" id="login-user" name="username" class="form-control"
+                 placeholder="Enter username or email" required autocomplete="username"/>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label for="login-pw" class="form-label fw-semibold">Password</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock" style="color:var(--accent)"></i></span>
+          <input type="password" id="login-pw" name="password" class="form-control"
+                 placeholder="Enter password" required autocomplete="current-password"/>
+          <span class="input-group-text" data-pw-toggle="login-pw">
+            <i class="bi bi-eye"></i>
+          </span>
+        </div>
+      </div>
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="remember" id="remember">
+          <label class="form-check-label small text-muted" for="remember">Remember me</label>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-accent w-100 py-2 fw-semibold" id="loginBtn">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+      </button>
+    </form>
+    <hr class="my-4"/>
+    <p class="text-center text-muted small mb-2">
+      Don't have an account? <a href="{{ url_for('auth.register_page') }}" class="fw-semibold" style="color:var(--accent)">Register here</a>
+    </p>
+    <p class="text-center small mb-0" style="color:var(--text-muted)">
+      <i class="bi bi-info-circle me-1"></i>
+      Default admin: <code>admin</code> / <code>admin123</code>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('loginForm').addEventListener('submit', function() {
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Logging in…';
+});
+</script>
+{% endblock %}

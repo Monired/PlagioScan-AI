@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}Results — {{ doc.original_name }} — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+
+  <!-- Header -->
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-xs btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i>Dashboard
+        </a>
+        <span class="text-muted small">/ Results</span>
+      </div>
+      <h5 class="fw-bold mb-0">
+        <i class="bi bi-file-earmark-bar-graph me-2" style="color:var(--accent)"></i>
+        {{ doc.original_name|truncate(55,true,'…') }}
+      </h5>
+      <div class="d-flex gap-3 mt-1 flex-wrap">
+        <span class="small text-muted"><i class="bi bi-file-earmark me-1"></i>{{ doc.word_count }} words</span>
+        <span class="small text-muted"><i class="bi bi-hash me-1"></i>{{ doc.doc_hash[:16] if doc.doc_hash else 'N/A' }}…</span>
+        <span class="small text-muted"><i class="bi bi-calendar3 me-1"></i>{{ analysis.analyzed_at|fmt_dt }}</span>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('analysis.compare', doc_id=doc.id) }}" class="btn btn-sm btn-outline-accent">
+        <i class="bi bi-files me-1"></i>Compare
+      </a>
+      <a href="{{ url_for('analysis.reanalyze', doc_id=doc.id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-clockwise me-1"></i>Re-Analyse
+      </a>
+      <a href="{{ url_for('analysis.download_report', analysis_id=analysis.id) }}"
+         class="btn btn-sm btn-accent px-4">
+        <i class="bi bi-file-pdf me-2"></i>Download PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Overall Score Ring + Core Scores -->
+  <div class="row g-4 mb-4">
+
+    <!-- Score Ring -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card-glass p-4 text-center h-100 d-flex flex-column align-items-center justify-content-center">
+        <div class="score-ring mb-3
+          {% if analysis.plagiarism_score < 20 %}ring-safe{% elif analysis.plagiarism_score < 50 %}ring-warn{% else %}ring-high{% endif %}">
+          <div class="ring-val">{{ analysis.plagiarism_score|round(1) }}</div>
+          <div class="ring-label">Plagiarism %</div>
+        </div>
+        <div class="grade-badge grade-{{ analysis.grade }} fs-5 mb-2">{{ analysis.grade }}</div>
+        <div class="fw-bold" style="font-size:1.5rem;color:var(--accent)">{{ analysis.overall_score }}/100</div>
+        <div class="small text-muted">Overall Score</div>
+        <div class="mt-3">
+          {% set o = analysis.originality_score %}
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="small text-muted">Originality</span>
+            <span class="small fw-semibold {% if o>=75 %}text-success{% elif o>=50 %}text-warning{% else %}text-danger{% endif %}">
+              {{ o|round(1) }}%
+            </span>
+          </div>
+          <div class="progress mb-3" style="height:5px">
+            <div class="progress-bar {% if o>=75 %}bg-success{% elif o>=50 %}bg-warning{% else %}bg-danger{% endif %}"
+                 style="width:{{ o }}%"></div>
+          </div>
+          <div class="small text-muted">{{ analysis.processing_time|round(1) }}s processing time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Score Cards Grid -->
+    <div class="col-lg-9 col-md-6">
+      <div class="row g-2">
+        {% for label, val, color, icon in [
+          ('Writing Quality',  analysis.writing_quality_score, 'var(--accent)', 'pencil-fill'),
+          ('Originality',      analysis.originality_score,     'var(--teal)',   'star-fill'),
+          ('Readability',      analysis.readability_score,     '#4fc3f7',       'book-fill'),
+          ('Vocabulary',       analysis.vocabulary_score,      '#ab47bc',       'alphabet'),
+          ('Research Depth',   analysis.research_depth_score,  '#ff7043',       'search'),
+          ('Contribution',     analysis.contribution_score,    '#26c6da',       'lightbulb-fill'),
+          ('Academic Score',   analysis.academic_score,        '#66bb6a',       'mortarboard-fill'),
+          ('Citation Score',   analysis.citation_score,        '#ffa726',       'bookmark-fill'),
+          ('Grammar',          analysis.grammar_score,         '#ec407a',       'check2-circle'),
+          ('Semantic Match',   analysis.semantic_score,        '#7986cb',       'cpu'),
+        ] %}
+        <div class="col-6 col-md-4 col-xl-3-5">
+          <div class="score-card shown">
+            <div class="score-val" style="color:{{ color }}">
+              {{ val|round(1) }}
+            </div>
+            <div class="score-label">
+              <i class="bi bi-{{ icon }} me-1"></i>{{ label }}
+            </div>
+            <div class="score-bar mt-1">
+              <div class="score-fill" style="background:{{ color }};width:{{ val }}%"></div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Similarity Breakdown -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="card-glass p-4 h-100">
+        <div class="card-header-bar">
+          <span class="fw-semibold"><i class="bi bi-diagram-3 me-2" style="color:var(--accent)"></i>Algorithm Breakdown</span>
+        </div>
+        {% for key, label, color in [
+          ('tfidf',    'TF-IDF Cosine',    'var(--accent)'),
+          ('ngram',    'N-Gram',           'var(--teal)'),
+          ('jaccard',  'Jaccard',          '#ffa726'),
+          ('fuzzy',    'Fuzzy Match',      '#ec407a'),
+          ('combined', 'Combined Score',   'var(--warning)'),
+        ] %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small fw-semibold">{{ label }}</span>
+            <span class="small" style="color:{{ color }}">{{ (sim_d.get(key, 0))|round(1) }}%</span>
+          </div>
+          <div class="score-bar">
+            <div class="score-fill" style="background:{{ color }};width:{{ (sim_d.get(key, 0)) }}%"></div>
+          </div>
+        </div>
+        {% endfor %}
+        {% if analysis.semantic_score > 0 %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small fw-semibold">Semantic AI</span>
+            <span class="small" style="color:#7986cb">{{ analysis.semantic_score|round(1) }}%</span>
+          </div>
+          <div class="score-bar">
+            <div class="score-fill" style="background:#7986cb;width:{{ analysis.semantic_score }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="col-lg-4">
+      <div class="card-glass p-4 h-100">
+        <div class="card-header-bar">
+          <span class="fw-semibold"><i class="bi bi-pentagon me-2" style="color:var(--teal)"></i>Quality Radar</span>
+        </div>
+        <canvas id="radarChart" style="max-height:240px"></canvas>
+      </div>
+    </div>
+
+    <!-- Citation Analysis -->
+    <div class="col-lg-4">
+      <div class="card-glass p-4 h-100">
+        <div class="card-header-bar">
+          <span class="fw-semibold"><i class="bi bi-bookmark-check me-2" style="color:var(--warning)"></i>Citation Analysis</span>
+          <span class="badge badge-primary small">{{ citation_d.get('style_detected','None') }}</span>
+        </div>
+        <div class="row g-2 mb-3">
+          {% for label, val, color in [
+            ('Total Citations',  citation_d.get('total_citations', 0), 'var(--accent)'),
+            ('Reference Lines',  citation_d.get('reference_lines', 0), 'var(--teal)'),
+            ('DOIs Found',       citation_d.get('dois',[])|length,   '#ffa726'),
+            ('Diversity Score',  citation_d.get('diversity_score', 0), '#66bb6a'),
+          ] %}
+          <div class="col-6">
+            <div class="profile-stat text-center">
+              <div class="profile-stat-val" style="color:{{ color }}">{{ val }}</div>
+              <div class="profile-stat-lbl">{{ label }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if citation_d.get('warnings') %}
+        <div class="mt-2">
+          {% for w in citation_d.get('warnings', [])[:3] %}
+          <div class="alert alert-warning py-1 px-2 mb-1" style="font-size:.75rem">
+            <i class="bi bi-exclamation-triangle me-1"></i>{{ w }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if citation_d.get('style_counts') %}
+        <div class="mt-3">
+          <div class="small text-muted mb-2">Styles detected:</div>
+          {% for style, cnt in citation_d.get('style_counts',{}).items() %}
+          <span class="word-tag badge-primary me-1 mb-1">{{ style }}: {{ cnt }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Tabs: Writing, Web Matches, Academic, AI Assistant, Highlighted -->
+  <div class="card-glass mb-4">
+    <ul class="nav nav-tabs px-3 pt-2" id="resultTabs">
+      <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabHighlight">
+        <i class="bi bi-highlight me-1"></i>Highlighted Text
+      </a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabWeb">
+        <i class="bi bi-globe2 me-1"></i>Web Sources
+        {% if web_m %}<span class="badge badge-danger ms-1">{{ web_m|length }}</span>{% endif %}
+      </a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabAcademic">
+        <i class="bi bi-journal-text me-1"></i>Academic Sources
+        {% if academic_m %}<span class="badge badge-primary ms-1">{{ academic_m|length }}</span>{% endif %}
+      </a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabWriting">
+        <i class="bi bi-pen me-1"></i>Writing Analysis
+      </a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabAI">
+        <i class="bi bi-robot me-1"></i>AI Assistant
+      </a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabSuggestions">
+        <i class="bi bi-lightbulb me-1"></i>Suggestions
+        {% if suggestions %}<span class="badge badge-warning ms-1">{{ suggestions|length }}</span>{% endif %}
+      </a></li>
+    </ul>
+    <div class="tab-content p-4">
+
+      <!-- Highlighted Text -->
+      <div class="tab-pane fade show active" id="tabHighlight">
+        <div class="hl-legend mb-3">
+          <span class="text-muted small me-1">Severity:</span>
+          {% for cls, col, label in [('dot-red','#e84393','High'),('dot-orange','#ff9100','Medium'),('dot-yellow','#f9ca24','Low'),('dot-green','#00c9a7','Safe')] %}
+          <span><span class="hl-dot {{ cls }}" style="background:{{ col }}"></span>{{ label }}</span>
+          {% endfor %}
+        </div>
+        {% if analysis.highlighted_html %}
+        <div class="highlighted-content">{{ analysis.highlighted_html|safe }}</div>
+        {% else %}
+        <div class="empty-state">
+          <i class="bi bi-check-circle-fill" style="color:var(--teal)"></i>
+          <p>No significant matches found — your document appears highly original.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Web Sources -->
+      <div class="tab-pane fade" id="tabWeb">
+        {% if web_m %}
+        <div class="row g-3">
+          {% for m in web_m %}
+          <div class="col-12">
+            <div class="web-match-card">
+              <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div class="flex-grow-1">
+                  <div class="fw-semibold mb-1">
+                    <a href="{{ m.get('url','#') }}" target="_blank" rel="noopener"
+                       style="color:var(--text)">{{ m.get('title','Unknown Source') }}</a>
+                  </div>
+                  <a href="{{ m.get('url','#') }}" target="_blank" rel="noopener"
+                     class="small" style="color:var(--accent);font-size:.78rem">
+                    <i class="bi bi-link-45deg"></i>{{ m.get('url','#')|truncate(70,true,'…') }}
+                  </a>
+                  {% if m.get('matched_sentence') %}
+                  <div class="match-snippet mt-2">"{{ m.get('matched_sentence','') }}"</div>
+                  {% endif %}
+                </div>
+                <div class="text-end" style="min-width:80px">
+                  <div class="fw-bold
+                    {% if m.get('similarity',0)>=50 %}text-danger{% elif m.get('similarity',0)>=20 %}text-warning{% else %}text-success{% endif %}"
+                       style="font-size:1.2rem">
+                    {{ m.get('similarity',0)|round(1) }}%
+                  </div>
+                  <div class="small text-muted">similarity</div>
+                  <div class="sim-bar mt-1">
+                    <div class="sim-fill {% if m.get('similarity',0)>=50 %}sim-danger{% elif m.get('similarity',0)>=20 %}sim-warning{% else %}sim-success{% endif %}"
+                         style="width:{{ m.get('similarity',0) }}%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <i class="bi bi-globe2"></i>
+          <h5>No Web Matches Found</h5>
+          <p>Your document doesn't appear to match any publicly available web content.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Academic Sources -->
+      <div class="tab-pane fade" id="tabAcademic">
+        {% if academic_m %}
+        <div class="row g-3">
+          {% for m in academic_m %}
+          <div class="col-12">
+            <div class="web-match-card">
+              <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                <div class="flex-grow-1">
+                  <div class="fw-semibold mb-1">
+                    <i class="bi bi-journal-text me-1" style="color:var(--accent)"></i>
+                    {% if m.get('url') %}
+                    <a href="{{ m.get('url') }}" target="_blank" rel="noopener" style="color:var(--text)">
+                      {{ m.get('title','Unknown Paper') }}
+                    </a>
+                    {% else %}
+                    {{ m.get('title','Unknown Paper') }}
+                    {% endif %}
+                  </div>
+                  <div class="small text-muted">
+                    {% if m.get('authors') %}<span>{{ m.get('authors') }}</span>{% endif %}
+                    {% if m.get('year') %}&nbsp;·&nbsp;<span>{{ m.get('year') }}</span>{% endif %}
+                    {% if m.get('venue') %}&nbsp;·&nbsp;<em>{{ m.get('venue') }}</em>{% endif %}
+                  </div>
+                  {% if m.get('abstract') %}
+                  <div class="match-snippet mt-2">{{ m.get('abstract')[:200] }}…</div>
+                  {% endif %}
+                  <div class="mt-1">
+                    <span class="word-tag badge-primary">{{ m.get('source','Academic') }}</span>
+                  </div>
+                </div>
+                <div class="text-end" style="min-width:80px">
+                  <div class="fw-bold {% if m.get('similarity',0)>=50 %}text-danger{% elif m.get('similarity',0)>=20 %}text-warning{% else %}text-success{% endif %}"
+                       style="font-size:1.1rem">
+                    {{ m.get('similarity',0)|round(1) }}%
+                  </div>
+                  <div class="small text-muted">similarity</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <i class="bi bi-journal-text"></i>
+          <h5>No Academic Matches Found</h5>
+          <p>No matching papers found in OpenAlex, Semantic Scholar, or Crossref.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Writing Analysis -->
+      <div class="tab-pane fade" id="tabWriting">
+        {% set ai = ai_d %}
+        <div class="row g-3">
+          {% for label, key, unit, icon in [
+            ('Passive Voice', 'passive_voice_pct', '%', 'question-circle'),
+            ('Flesch Readability', 'readability_score', '/100', 'book'),
+            ('FK Grade Level', 'flesch_kincaid_grade', '', 'mortarboard'),
+            ('Vocabulary Richness', 'vocabulary_richness', '%', 'alphabet'),
+            ('Avg Sentence Length', 'avg_sentence_length', ' words', 'text-paragraph'),
+            ('Academic Vocab Score', 'academic_vocab_score', '/100', 'award'),
+            ('Grammar Quality', 'grammar_score', '/100', 'check2-square'),
+            ('Writing Tone', 'tone', '', 'chat-quote'),
+          ] %}
+          <div class="col-md-6 col-lg-3">
+            <div class="web-match-card text-center py-3">
+              <i class="bi bi-{{ icon }} mb-2" style="font-size:1.5rem;color:var(--accent)"></i>
+              <div class="fw-bold" style="font-size:1.3rem;color:var(--text)">
+                {% if ai.get(key) is number %}
+                  {{ ai.get(key,0)|round(1) }}{{ unit }}
+                {% else %}
+                  {{ ai.get(key,'N/A') }}{{ unit }}
+                {% endif %}
+              </div>
+              <div class="small text-muted">{{ label }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if ai.get('keyword_density') %}
+        <div class="card-glass p-3 mt-4">
+          <div class="fw-semibold mb-3 small"><i class="bi bi-tags me-2" style="color:var(--teal)"></i>Top Keywords</div>
+          <div class="d-flex flex-wrap gap-2">
+            {% for word, freq in (ai.get('keyword_density',{})|dictsort(by='value',reverse=true))[:18] %}
+            <span class="word-tag word-add">{{ word }} <small style="opacity:.7">({{ freq }})</small></span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- AI Assistant -->
+      <div class="tab-pane fade" id="tabAI">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="card-glass p-4" style="border-color:rgba(0,201,167,.2)">
+              <h6 class="fw-bold mb-3" style="color:var(--teal)">
+                <i class="bi bi-hand-thumbs-up-fill me-2"></i>Strengths
+              </h6>
+              {% if ai_summary.get('strengths') %}
+                {% for s in ai_summary.get('strengths',[]) %}
+                <div class="suggestion-item mb-2">
+                  <i class="bi bi-check-circle-fill" style="color:var(--teal);flex-shrink:0"></i>
+                  <span>{{ s }}</span>
+                </div>
+                {% endfor %}
+              {% else %}
+              <p class="text-muted small">Strengths will be calculated during detailed analysis.</p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card-glass p-4" style="border-color:rgba(232,67,147,.2)">
+              <h6 class="fw-bold mb-3" style="color:var(--danger)">
+                <i class="bi bi-exclamation-circle-fill me-2"></i>Areas for Improvement
+              </h6>
+              {% if ai_summary.get('weaknesses') %}
+                {% for w in ai_summary.get('weaknesses',[]) %}
+                <div class="suggestion-item mb-2">
+                  <i class="bi bi-x-circle-fill" style="color:var(--danger);flex-shrink:0"></i>
+                  <span>{{ w }}</span>
+                </div>
+                {% endfor %}
+              {% else %}
+              <p class="text-muted small">No major weaknesses detected.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggestions -->
+      <div class="tab-pane fade" id="tabSuggestions">
+        {% if suggestions %}
+        <div class="row g-2">
+          {% for s in suggestions %}
+          <div class="col-12">
+            <div class="suggestion-item">
+              <i class="bi bi-lightbulb-fill" style="color:var(--warning);flex-shrink:0"></i>
+              <span>{{ s }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <i class="bi bi-emoji-smile"></i>
+          <h5>Great Work!</h5>
+          <p>No major improvement suggestions at this time.</p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div><!-- tab-content -->
+  </div><!-- card-glass -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Animate sim fills
+document.querySelectorAll('.sim-fill,.score-fill').forEach(el => {
+  const w = el.style.width; el.style.width='0';
+  requestAnimationFrame(()=>{ el.style.transition='width 1.2s ease'; el.style.width=w; });
+});
+
+// Radar chart
+const rctx = document.getElementById('radarChart');
+if (rctx) {
+  new Chart(rctx, {
+    type: 'radar',
+    data: {
+      labels: ['Writing','Originality','Readability','Vocab','Research','Contribution','Citation'],
+      datasets: [{
+        label: 'Score',
+        data: [
+          {{ analysis.writing_quality_score|round(1) }},
+          {{ analysis.originality_score|round(1) }},
+          {{ analysis.readability_score|round(1) }},
+          {{ analysis.vocabulary_score|round(1) }},
+          {{ analysis.research_depth_score|round(1) }},
+          {{ analysis.contribution_score|round(1) }},
+          {{ analysis.citation_score|round(1) }},
+        ],
+        fill: true,
+        backgroundColor: 'rgba(108,99,255,.18)',
+        borderColor: 'rgba(108,99,255,.85)',
+        pointBackgroundColor: '#6c63ff',
+        pointBorderColor: '#fff',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { r: {
+        min: 0, max: 100,
+        ticks: { color: 'rgba(168,178,216,.7)', backdropColor: 'transparent', font:{size:9} },
+        grid:  { color: 'rgba(255,255,255,.07)' },
+        angleLines: { color: 'rgba(255,255,255,.07)' },
+        pointLabels: { color: 'rgba(168,178,216,.9)', font:{size:10} }
+      }},
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+</script>
+{% endblock %}

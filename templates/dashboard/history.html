@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Analysis History — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h4 class="fw-bold mb-0">
+        <i class="bi bi-clock-history me-2" style="color:var(--accent)"></i>Analysis History
+      </h4>
+      <p class="text-muted small mb-0">All completed analyses for your account</p>
+    </div>
+    <div class="d-flex gap-2">
+      <input type="text" id="histSearch" class="search-input" placeholder="Search documents…"/>
+      <a href="{{ url_for('analysis.upload') }}" class="btn btn-accent btn-sm px-3">
+        <i class="bi bi-cloud-upload me-1"></i>New Analysis
+      </a>
+    </div>
+  </div>
+
+  {% if rows %}
+  <div class="card-glass p-0 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle" id="histTable">
+        <thead>
+          <tr>
+            <th><i class="bi bi-file-earmark me-1"></i>Document</th>
+            <th><i class="bi bi-bar-chart me-1"></i>Plagiarism</th>
+            <th><i class="bi bi-star me-1"></i>Originality</th>
+            <th><i class="bi bi-trophy me-1"></i>Overall</th>
+            <th><i class="bi bi-award me-1"></i>Grade</th>
+            <th><i class="bi bi-calendar3 me-1"></i>Date</th>
+            <th><i class="bi bi-gear me-1"></i>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc, an in rows %}
+          <tr class="hist-row">
+            <td>
+              <div class="fw-semibold" style="font-size:.9rem">{{ doc.original_name|truncate(36,true,'…') }}</div>
+              <div class="small text-muted">
+                {{ doc.word_count }} words &nbsp;·&nbsp;
+                <span class="badge badge-primary" style="font-size:.7rem">{{ doc.file_type|upper }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="sim-bar flex-grow-1" style="width:80px">
+                  <div class="sim-fill {% if an.plagiarism_score<20 %}sim-success{% elif an.plagiarism_score<50 %}sim-warning{% else %}sim-danger{% endif %}"
+                       style="width:{{ an.plagiarism_score }}%"></div>
+                </div>
+                <span class="fw-semibold small
+                  {% if an.plagiarism_score<20 %}text-success{% elif an.plagiarism_score<50 %}text-warning{% else %}text-danger{% endif %}">
+                  {{ an.plagiarism_score|round(1) }}%
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="fw-semibold {% if an.originality_score>=75 %}text-success{% elif an.originality_score>=50 %}text-warning{% else %}text-danger{% endif %}">
+                {{ an.originality_score|round(1) }}%
+              </span>
+            </td>
+            <td>
+              <span class="fw-bold" style="color:var(--accent)">{{ an.overall_score }}</span>
+              <span class="text-muted small">/100</span>
+            </td>
+            <td>
+              <span class="grade-badge grade-{{ an.grade }}">{{ an.grade }}</span>
+            </td>
+            <td>
+              <span class="small text-muted">{{ an.analyzed_at|fmt_dt }}</span>
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('analysis.results', analysis_id=an.id) }}"
+                   class="btn btn-xs btn-accent" title="View Results">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ url_for('analysis.download_report', analysis_id=an.id) }}"
+                   class="btn btn-xs btn-outline-accent" title="Download PDF">
+                  <i class="bi bi-file-pdf"></i>
+                </a>
+                <a href="{{ url_for('analysis.compare', doc_id=doc.id) }}"
+                   class="btn btn-xs btn-outline-secondary" title="Compare">
+                  <i class="bi bi-files"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="text-muted small mt-3">
+    Showing {{ rows|length }} completed {{ 'analysis' if rows|length==1 else 'analyses' }}.
+  </p>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-clock-history"></i>
+    <h5>No analysis history yet</h5>
+    <p>Upload and analyse a document to see your history here.</p>
+    <a href="{{ url_for('analysis.upload') }}" class="btn btn-accent mt-2 px-4">
+      <i class="bi bi-cloud-upload me-2"></i>Upload Document
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('histSearch')?.addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.hist-row').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+// Animate progress bars
+document.querySelectorAll('.sim-fill').forEach(el => {
+  const w = el.style.width; el.style.width = '0';
+  setTimeout(() => el.style.width = w, 200);
+});
+</script>
+{% endblock %}

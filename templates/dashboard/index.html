@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — PlagioScan AI{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h4 class="fw-bold mb-0">
+        <i class="bi bi-speedometer2 me-2" style="color:var(--accent)"></i>Dashboard
+      </h4>
+      <p class="text-muted small mb-0">Welcome back, <strong>{{ current_user.username }}</strong></p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('dashboard.history') }}" class="btn btn-sm btn-outline-accent">
+        <i class="bi bi-clock-history me-1"></i>History
+      </a>
+      <a href="{{ url_for('analysis.upload') }}" class="btn btn-sm btn-accent px-4">
+        <i class="bi bi-cloud-upload me-2"></i>New Analysis
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="row g-3 mb-4">
+    {% for icon, val, lbl, cls in [
+      ('file-earmark-text', total_docs, 'Total Documents', 'stat-blue'),
+      ('bar-chart-fill', analyzed, 'Analyses Done', 'stat-green'),
+      ('exclamation-triangle-fill', (avg_plag|string)+'%', 'Avg Plagiarism', 'stat-red'),
+      ('award-fill', (avg_orig|string)+'%', 'Avg Originality', 'stat-purple'),
+    ] %}
+    <div class="col-6 col-lg-3">
+      <div class="stat-card {{ cls }}">
+        <div class="stat-icon"><i class="bi bi-{{ icon }}"></i></div>
+        <div class="stat-value counter" data-target="{{ val }}">{{ val }}</div>
+        <div class="stat-label">{{ lbl }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Charts Row -->
+  {% if analyzed > 0 %}
+  <div class="row g-3 mb-4">
+    <div class="col-md-8">
+      <div class="card-glass p-4" style="height:280px">
+        <div class="card-header-bar">
+          <span class="fw-semibold small"><i class="bi bi-bar-chart me-2" style="color:var(--accent)"></i>Plagiarism vs Originality</span>
+          <span class="badge badge-primary small">Last {{ chart_labels|length }} Analyses</span>
+        </div>
+        <canvas id="barChart" style="max-height:200px"></canvas>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-glass p-4" style="height:280px">
+        <div class="card-header-bar">
+          <span class="fw-semibold small"><i class="bi bi-pie-chart me-2" style="color:var(--teal)"></i>Status</span>
+        </div>
+        <canvas id="pieChart" style="max-height:200px"></canvas>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Documents Table -->
+  <div class="card-glass overflow-hidden">
+    <div class="d-flex align-items-center justify-content-between px-4 py-3" style="border-bottom:1px solid var(--border)">
+      <span class="fw-semibold"><i class="bi bi-files me-2" style="color:var(--accent)"></i>Recent Documents</span>
+      <div class="d-flex gap-2 align-items-center">
+        <input type="text" id="docSearch" class="search-input" placeholder="Search…"/>
+        {% if total_docs > 0 %}
+        <a href="{{ url_for('dashboard.history') }}" class="btn btn-xs btn-outline-accent">
+          View All History
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if docs_with_analysis %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Document</th>
+            <th>Plagiarism</th>
+            <th>Originality</th>
+            <th>Overall</th>
+            <th>Grade</th>
+            <th>Uploaded</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc, an in docs_with_analysis[:20] %}
+          <tr class="doc-row">
+            <td>
+              <div class="fw-semibold" style="font-size:.88rem">{{ doc.original_name|truncate(34,true,'…') }}</div>
+              <div class="small text-muted">{{ doc.word_count }} words &nbsp;·&nbsp; {{ doc.file_type|upper }}</div>
+            </td>
+            <td>
+              {% if an and an.status == 'done' %}
+                {% set ps = an.plagiarism_score %}
+                <div class="d-flex align-items-center gap-2">
+                  <div class="sim-bar" style="width:70px">
+                    <div class="sim-fill {% if ps<20 %}sim-success{% elif ps<50 %}sim-warning{% else %}sim-danger{% endif %}"
+                         style="width:{{ ps }}%"></div>
+                  </div>
+                  <span class="small fw-semibold
+                    {% if ps<20 %}text-success{% elif ps<50 %}text-warning{% else %}text-danger{% endif %}">
+                    {{ ps|round(1) }}%
+                  </span>
+                </div>
+              {% elif an and an.status in ['pending','running'] %}
+                <a href="{{ url_for('analysis.progress_page', doc_id=doc.id) }}"
+                   class="badge badge-warning small">⚙ Analysing…</a>
+              {% elif an and an.status == 'error' %}
+                <span class="badge badge-danger small">Error</span>
+              {% else %}
+                <a href="{{ url_for('analysis.progress_page', doc_id=doc.id) }}"
+                   class="btn btn-xs btn-accent">Analyse</a>
+              {% endif %}
+            </td>
+            <td>
+              {% if an and an.status == 'done' %}
+              <span class="fw-semibold
+                {% if an.originality_score>=75 %}text-success{% elif an.originality_score>=50 %}text-warning{% else %}text-danger{% endif %}">
+                {{ an.originality_score|round(1) }}%
+              </span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if an and an.status == 'done' %}
+              <span class="fw-bold" style="color:var(--accent)">{{ an.overall_score }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if an and an.status == 'done' %}
+              <span class="grade-badge grade-{{ an.grade }}">{{ an.grade }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td><span class="small text-muted">{{ doc.uploaded_at|fmt_dt }}</span></td>
+            <td>
+              <div class="d-flex gap-1">
+                {% if an and an.status == 'done' %}
+                <a href="{{ url_for('analysis.results', analysis_id=an.id) }}"
+                   class="btn btn-xs btn-accent" title="Results"><i class="bi bi-eye"></i></a>
+                <a href="{{ url_for('analysis.download_report', analysis_id=an.id) }}"
+                   class="btn btn-xs btn-outline-accent" title="PDF"><i class="bi bi-file-pdf"></i></a>
+                <a href="{{ url_for('analysis.compare', doc_id=doc.id) }}"
+                   class="btn btn-xs btn-outline-secondary" title="Compare"><i class="bi bi-files"></i></a>
+                {% else %}
+                <a href="{{ url_for('analysis.preview', doc_id=doc.id) }}"
+                   class="btn btn-xs btn-outline-secondary" title="Preview"><i class="bi bi-eye"></i></a>
+                {% endif %}
+                <form method="POST" action="{{ url_for('analysis.delete_doc', doc_id=doc.id) }}"
+                      style="display:inline"
+                      onsubmit="return confirm('Delete this document?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button type="submit" class="btn btn-xs btn-outline-danger" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state py-5">
+      <i class="bi bi-cloud-upload" style="font-size:3rem;opacity:.3;display:block;margin-bottom:1rem"></i>
+      <h5 class="fw-semibold">No documents yet</h5>
+      <p class="text-muted small">Upload your first document to get started.</p>
+      <a href="{{ url_for('analysis.upload') }}" class="btn btn-accent mt-2 px-4">
+        <i class="bi bi-cloud-upload me-2"></i>Upload Document
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Search filter
+document.getElementById('docSearch')?.addEventListener('input', function(){
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.doc-row').forEach(r =>
+    r.style.display = r.textContent.toLowerCase().includes(q)?'':'none'
+  );
+});
+
+// Animate progress bars
+document.querySelectorAll('.sim-fill').forEach(el => {
+  const w = el.style.width; el.style.width='0';
+  requestAnimationFrame(()=>{ el.style.transition='width 1.2s ease'; el.style.width=w; });
+});
+
+{% if analyzed > 0 %}
+// Bar chart
+const bctx = document.getElementById('barChart')?.getContext('2d');
+if (bctx) new Chart(bctx, {
+  type: 'bar',
+  data: {
+    labels: {{ chart_labels|tojson }},
+    datasets: [
+      { label: 'Plagiarism %', data: {{ chart_plag|tojson }},
+        backgroundColor: 'rgba(232,67,147,.55)', borderColor: '#e84393', borderWidth:1.5, borderRadius:4 },
+      { label: 'Originality %', data: {{ chart_orig|tojson }},
+        backgroundColor: 'rgba(0,201,167,.45)', borderColor: '#00c9a7', borderWidth:1.5, borderRadius:4 },
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:'rgba(168,178,216,.9)', font:{size:11} } } },
+    scales:{
+      x:{ ticks:{color:'rgba(168,178,216,.7)',font:{size:10}}, grid:{color:'rgba(255,255,255,.04)'} },
+      y:{ ticks:{color:'rgba(168,178,216,.7)',font:{size:10}}, grid:{color:'rgba(255,255,255,.04)'},
+          min:0,max:100 }
+    }
+  }
+});
+
+// Pie chart
+const pctx = document.getElementById('pieChart')?.getContext('2d');
+if (pctx) new Chart(pctx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Analysed','Pending'],
+    datasets:[{ data:[{{ analyzed }},{{ total_docs - analyzed }}],
+      backgroundColor:['rgba(108,99,255,.7)','rgba(255,255,255,.08)'],
+      borderColor:['#6c63ff','rgba(255,255,255,.1)'],
+      borderWidth:2, hoverOffset:6
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:'rgba(168,178,216,.9)', font:{size:11} } } }
+  }
+});
+{% endif %}
+
+// Counter animation
+document.querySelectorAll('.counter').forEach(el => {
+  const target = parseFloat(el.dataset.target);
+  if (isNaN(target)) return;
+  let cur=0; const step = target/40;
+  const timer = setInterval(()=>{
+    cur = Math.min(cur+step, target);
+    el.textContent = target%1!==0 ? cur.toFixed(1)+'%' : Math.floor(cur).toString();
+    if (cur >= target) clearInterval(timer);
+  }, 35);
+});
+</script>
+{% endblock %}

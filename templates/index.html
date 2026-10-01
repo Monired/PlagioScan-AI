@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}PlagioScan AI — Intelligent Plagiarism Detection{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="container text-center position-relative">
+    <div class="hero-badge mb-3"><i class="bi bi-stars me-1"></i>Next-Generation Academic Integrity Platform</div>
+    <h1 class="hero-title mt-3">AI-Powered<br>Plagiarism Detection</h1>
+    <p class="hero-sub mt-4 mb-5">
+      Multi-algorithm detection combining TF-IDF, semantic similarity, live web search,
+      and 20+ AI writing analysis features — built for academic excellence.
+    </p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap mb-5">
+      <a href="{{ url_for('auth.register_page') }}" class="btn btn-accent btn-lg px-5 shadow-lg">
+        <i class="bi bi-rocket-takeoff me-2"></i>Start For Free
+      </a>
+      <a href="{{ url_for('auth.login_page') }}" class="btn btn-outline-light btn-lg px-5">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+      </a>
+    </div>
+    <!-- Stat pills -->
+    <div class="d-flex justify-content-center gap-2 flex-wrap">
+      {% for icon, label, color in [
+        ('cpu-fill','Multi-Algorithm Detection','accent'),
+        ('globe2','Live Web Comparison','teal'),
+        ('pen-fill','20+ AI Features','warning'),
+        ('file-earmark-pdf','PDF Reports','danger'),
+        ('git-merge','Draft Tracking','text-info')
+      ] %}
+      <div class="metric-pill d-flex align-items-center gap-1 px-3 py-2"
+           style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;font-size:.84rem;font-weight:500;transition:var(--t)"
+           onmouseover="this.style.borderColor='var(--accent)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        <i class="bi bi-{{ icon }} text-{{ color }}"></i> {{ label }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="py-4" style="background:rgba(108,99,255,.05);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="row g-3 text-center">
+      {% for icon, val, label, color in [
+        ('shield-check-fill','5','Similarity Algorithms','teal'),
+        ('cpu-fill','20+','AI Analysis Features','accent'),
+        ('globe2','Live','Web Search','warning'),
+        ('file-earmark-pdf','Pro','PDF Reports','danger')
+      ] %}
+      <div class="col-6 col-md-3">
+        <div class="d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-{{ icon }}" style="font-size:1.6rem;color:var(--{{ color }})"></i>
+          <div class="text-start">
+            <div style="font-size:1.45rem;font-weight:900;color:var(--{{ color }})">{{ val }}</div>
+            <div class="text-muted small">{{ label }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="hero-badge mb-3">Capabilities</div>
+      <h2 style="font-size:2rem;font-weight:800;">Everything You Need</h2>
+      <p class="text-muted mt-2">A complete academic integrity toolkit powered by AI</p>
+    </div>
+    <div class="row g-4">
+      {% for icon, color, title, desc in [
+        ('bug-fill','danger','Plagiarism Detection','5 algorithms: TF-IDF + Cosine, N-Gram, Jaccard, Fuzzy Matching — weighted into a combined confidence score.'),
+        ('globe2','teal','Live Web Search','DuckDuckGo-powered search compares your document against live web pages. No API key required.'),
+        ('pen-fill','primary','Writing Style Analysis','Readability (Flesch-Kincaid), passive voice %, vocabulary richness, sentence complexity, grammar quality.'),
+        ('lightbulb-fill','warning','AI Features (20+)','Contribution scoring, academic vocabulary, writing tone, keyword density, AI-generated content indicator.'),
+        ('journal-bookmark-fill','success','Research Depth','Citation analysis (APA, IEEE, DOI, URL), academic vocabulary scoring, reference quality evaluation.'),
+        ('git-merge','accent','Draft Comparison','Side-by-side synchronized comparison between document versions with highlighted differences.'),
+        ('exclamation-triangle-fill','danger','Suspicious Sections','Detects paragraphs with abrupt style changes — possible copy-paste or AI-generated content.'),
+        ('file-earmark-pdf','danger','PDF Reports','Professional reports with watermark, score tables, algorithm breakdown, web matches, suggestions.'),
+      ] %}
+      <div class="col-md-6 col-lg-3">
+        <div class="feature-card h-100">
+          <div class="feature-icon text-{{ color }}"><i class="bi bi-{{ icon }}"></i></div>
+          <h5 style="font-weight:700;font-size:1rem;margin-bottom:.5rem;">{{ title }}</h5>
+          <p style="font-size:.87rem;color:rgba(232,234,246,.65);line-height:1.65;margin:0">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="py-5" style="background:rgba(108,99,255,.03);border-top:1px solid var(--border);">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 style="font-size:1.9rem;font-weight:800;">How It Works</h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% for n, icon, title, desc in [
+        ('01','cloud-upload','Upload Document','PDF, DOCX, TXT, images (OCR), ZIP archives — all supported.'),
+        ('02','cpu','Multi-Algorithm Scan','5 similarity algorithms + live web search run simultaneously.'),
+        ('03','bar-chart','View Analytics','Visual dashboard with charts, highlighted matches, scores.'),
+        ('04','file-earmark-pdf','Download Report','Professional PDF with full analysis, sources, suggestions.')
+      ] %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="card-glass p-4 text-center h-100">
+          <div style="font-size:2.8rem;font-weight:900;color:rgba(108,99,255,.22);line-height:1">{{ n }}</div>
+          <i class="bi bi-{{ icon }} mt-2 d-block" style="font-size:1.7rem;color:var(--accent)"></i>
+          <h6 class="fw-bold mt-3">{{ title }}</h6>
+          <p class="text-muted small mb-0">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-5 text-center" style="background:linear-gradient(135deg,rgba(108,99,255,.2),rgba(0,201,167,.1));border-top:1px solid var(--border);">
+  <div class="container">
+    <h2 class="fw-bold mb-3">Ready to Ensure Your Academic Integrity?</h2>
+    <p class="text-muted mb-4">Join students and researchers who use PlagioScan AI to maintain originality.</p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="{{ url_for('auth.register_page') }}" class="btn btn-accent btn-lg px-5">
+        <i class="bi bi-person-plus me-2"></i>Create Free Account
+      </a>
+      <a href="{{ url_for('auth.login_page') }}" class="btn btn-outline-light btn-lg px-4">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
