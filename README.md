@@ -1,189 +1,119 @@
-# 🛡 PlagioScan AI
-## Intelligent Plagiarism Detection & Originality Analysis Platform
+# PlagioScan AI
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
-[![Flask](https://img.shields.io/badge/Flask-3.0-green.svg)](https://flask.palletsprojects.com)
-[![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
+AI-powered academic plagiarism and originality analysis system built with Python and Flask.
 
-PlagioScan AI is a professional, enterprise-grade academic integrity platform combining multi-algorithm plagiarism detection, live web comparison, and 20+ AI writing analysis features.
+## Overview
 
----
+PlagioScan AI is a web-based application that analyzes academic documents to identify potentially matching content and provide originality insights.
 
-## 🚀 Quick Start
+## Key Features
 
-```bash
-cd plagioscan_ai
-python run.py
-```
+- Document text extraction
+- Plagiarism and similarity detection
+- TF-IDF and Cosine Similarity analysis
+- N-Gram similarity analysis
+- Jaccard similarity analysis
+- Fuzzy text matching
+- Web-source comparison
+- Writing-style analysis
+- Originality analysis
+- Research-depth analysis
+- Grammar analysis
+- Citation checking
+- Document comparison
+- Analysis dashboard
+- PDF report generation
+- User authentication and profile management
+- REST API
+- Automated testing
 
-Server: **http://127.0.0.1:5000**  
-Default Admin: `admin` / `admin123`
+## Technologies
 
----
+- Python
+- Flask
+- Scikit-learn
+- SQLite
+- HTML
+- CSS
+- JavaScript
 
-## ✨ Features
+## How It Works
 
-### 🔬 Detection Engine (5 Algorithms)
-- **TF-IDF + Cosine Similarity** (40% weight) — scikit-learn powered
-- **N-Gram Similarity** (20% weight) — character trigrams
-- **Jaccard Similarity** (15% weight) — word set overlap
-- **Fuzzy String Matching** (25% weight) — SequenceMatcher
-- **Weighted Combined Score** — single confidence score
+1. The user uploads an academic document.
+2. The application extracts and processes the document text.
+3. Multiple similarity techniques are used to analyze potentially matching content.
+4. TF-IDF and Cosine Similarity are used for textual similarity analysis.
+5. The system can compare content with available web sources.
+6. Writing and originality analysis is performed.
+7. Results are displayed through the web dashboard.
+8. Reports can be generated from the analysis results.
 
-### 🌐 Internet Plagiarism Detection
-- DuckDuckGo search — no API key required
-- Live page download + clean text extraction
-- Sentence-level matching against web content
-- Source URL, title, confidence score
+## Project Structure
 
-### 🤖 AI Analysis Features (20+)
-| Feature | Description |
-|---------|-------------|
-| Originality Score | Overall original content percentage |
-| Writing Quality | Grammar + vocabulary + readability composite |
-| Research Depth | Citation analysis + academic vocabulary |
-| Contribution Score | Original analysis and opinion signals |
-| Readability | Flesch-Kincaid Reading Ease + Grade Level |
-| Vocabulary Richness | Type-Token Ratio |
-| Passive Voice % | Regex-based sentence-level detection |
-| Grammar Quality | Heuristic punctuation/capitalization checker |
-| Writing Tone | Formal/Informal/Mixed classifier |
-| Academic Score | Composite academic quality score |
-| AI Content Indicator | Experimental AI-written content heuristic |
-| Citation Checker | APA, IEEE, DOI, URL pattern detection |
-| Keyword Density | Top 15 keyword frequencies |
-| Repeated Phrases | Repeated n-gram detection |
-| Duplicate Paragraphs | Near-duplicate paragraph finder |
-| Document Structure | Intro/Conclusion/References detection |
-| Sentence Complexity | Average length, variation |
-| Vocabulary Score | Richness + average word length |
-| Highlighted Matches | Color-coded severity highlighting |
-| Improvement Suggestions | 12 actionable recommendations |
+```text
+PlagioScan-AI/
+│
+├── models/
+├── routes/
+├── services/
+├── static/
+├── templates/
+├── tests/
+├── utils/
+├── app.py
+├── config.py
+├── extensions.py
+├── requirements.txt
+└── run.py
 
-### 📊 Visualizations
-- Radar chart (7-axis score visualization)
-- Progress bars (per algorithm)
-- Score cards with animated counters
-- Highlighted text (red/orange/yellow/green by severity)
-- Side-by-side synchronized comparison
+## Installation & Setup
+1. Clone the Repository
+git clone https://github.com/Monired/PlagioScan-AI.git
+cd PlagioScan-AI
+2. Create a Virtual Environment
+python -m venv venv
+3. Activate the Virtual Environment
+Windows
+venv\Scripts\activate
+macOS/Linux
+source venv/bin/activate
+4. Install Dependencies
 
-### 📄 File Support
-- PDF (text-based + scanned via OCR*)
-- DOCX / DOC
-- TXT, RTF, ODT
-- PNG, JPG, JPEG (OCR*)
-- ZIP archives (batch processing)
+Install all required Python packages using the project's requirements file:
 
-*OCR requires: `pip install pytesseract Pillow` + Tesseract binary
-
-### 🏗 Architecture
-
-```
-plagioscan_ai/
-├── app.py               # Flask app factory
-├── config.py            # Environment-based configs
-├── run.py               # Development runner
-├── models/models.py     # SQLAlchemy ORM models
-├── routes/              # Flask Blueprints
-│   ├── auth.py          # Login, Register, Profile
-│   ├── dashboard.py     # User dashboard
-│   ├── analysis.py      # Upload, Analyze, Results
-│   ├── admin.py         # Admin panel
-│   └── api.py           # REST API v1
-├── services/            # Business logic
-│   ├── text_extractor.py
-│   ├── similarity.py    # All algorithms
-│   ├── analysis_engine.py # AI features
-│   ├── plagiarism.py    # Orchestrator
-│   ├── web_search.py    # Internet detection
-│   └── report_generator.py # PDF reports
-├── utils/               # Helpers
-│   ├── decorators.py
-│   ├── validators.py
-│   └── helpers.py
-├── static/css/style.css # Premium dark theme
-├── static/js/main.js    # Interactive JS
-└── templates/           # Jinja2 HTML templates
-```
-
----
-
-## ⚙️ Configuration
-
-Copy `.env.example` to `.env`:
-
-```bash
-SECRET_KEY=your-secret-key-here
-WEB_SEARCH_ENABLED=true
-WEB_SEARCH_TIMEOUT=8
-MAX_WEB_RESULTS=5
-# DATABASE_URL=postgresql://user:pass@host/db  # optional, SQLite by default
-```
-
----
-
-## 🔒 Security Features
-- CSRF protection (Flask-WTF)
-- Rate limiting (Flask-Limiter)
-- Werkzeug password hashing
-- Secure filename sanitization
-- SQL injection prevention (SQLAlchemy ORM)
-- XSS prevention (Jinja2 auto-escaping)
-- SECRET_KEY in environment variables
-- Session security flags
-
----
-
-## 🚢 Deployment
-
-### Render / Railway
-```bash
-# Set environment variables in dashboard, then:
-# Build: pip install -r requirements.txt
-# Start: gunicorn "app:create_app('production')" --workers=2 --bind=0.0.0.0:$PORT
-```
-
-### Docker
-```bash
-cp .env.example .env
-docker-compose up -d
-```
-
-### PythonAnywhere
-```bash
 pip install -r requirements.txt
-# WSGI: from app import create_app; application = create_app('production')
-```
+5. Run the Application
 
----
+Start the Flask application using:
 
-## 🔌 REST API
+python run.py
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/status` | GET | Service health check |
-| `/api/v1/documents` | GET | List user documents |
-| `/api/v1/analysis/<id>` | GET | Get analysis results |
-| `/api/v1/stats` | GET | User statistics |
+After the application starts, open:
 
----
+http://127.0.0.1:5000
+6. Run Tests
 
-## 📦 Dependencies
+To run the automated tests:
 
-Core: `flask`, `flask-sqlalchemy`, `flask-login`, `flask-wtf`, `flask-limiter`  
-ML/NLP: `scikit-learn`  
-Documents: `pypdf`, `python-docx`, `Pillow`  
-Web Search: `requests`, `beautifulsoup4`  
-Reports: `reportlab`  
-Config: `python-dotenv`  
-Deploy: `gunicorn`
+pytest
 
----
+For detailed test output:
 
-## 📝 License
+pytest -v
+Security
 
-MIT License — Free for academic and personal use.
+The application includes security-related features such as:
 
----
-
-*Built with ❤️ for academic integrity — PlagioScan AI v1.0.0*
+CSRF protection
+Password hashing
+Input validation
+Secure file handling
+Session security
+Database operations using SQLAlchemy
+Future Improvements
+Improved semantic similarity
+Enhanced document comparison
+Improved source verification
+Additional language support
+Enhanced reporting
+Cloud deployment
